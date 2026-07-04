@@ -65,6 +65,13 @@ class NetworkGraph:
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return float("inf")
 
+    def latencies_from_sat(self, sat_id, targets):
+        try:
+            dist = nx.single_source_dijkstra_path_length(self.G, sat_id, weight="delay")
+        except nx.NodeNotFound:
+            return {g: float("inf") for g in targets}
+        return {g: dist.get(g, float("inf")) for g in targets}
+
     def ps_dt_path(self, sat_id, host_id):
         try:
             return nx.shortest_path(self.G, sat_id, host_id, weight="delay")

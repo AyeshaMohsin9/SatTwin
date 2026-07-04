@@ -42,7 +42,7 @@ class HDTNEnvironment:
             self.net.build(t)
             self._built_t = t
 
-    def observe(self, t):
+    def observe(self, t, predict=True):
         self._ensure_graph(t)
         edge_ids = list(self.ground.edge_stations().keys())
         obs = Observation(t=t, edge_station_ids=edge_ids)
@@ -52,22 +52,25 @@ class HDTNEnvironment:
         for sid in self.constellation.sat_ids:
             host = self.edge_dt_host[sid]
             obs.host[sid] = host
-            obs.latency[sid] = (self.net.ps_dt_latency(sid, host)
-                                if host is not None else float("inf"))
-            obs.cand_latency[sid] = {
-                gid: self.net.ps_dt_latency(sid, gid) for gid in edge_ids
-            }
-            obs.predicted_latency[sid] = self._predict(sid, host, t)
+            cand = self.net.latencies_from_sat(sid, edge_ids)
+            obs.cand_latency[sid] = cand
+            obs.latency[sid] = cand.get(host, float("inf")) if host is not None \
+                else float("inf")
+        if predict:
+            self._fill_predictions(obs, t)
+        else:
+            for sid in self.constellation.sat_ids:
+                obs.predicted_latency[sid] = obs.latency[sid]
         return obs
 
-    def _predict(self, sid, host, t):
-        if host is None:
-            return float("inf")
-        dt = self.cfg.time_step_s
-        self.net.build(t + dt)
-        nxt = self.net.ps_dt_latency(sid, host)
+    def _fill_predictions(self, obs, t):
+        self.net.build(t + self.cfg.time_step_s)
+        for sid in self.constellation.sat_ids:
+            host = self.edge_dt_host[sid]
+            obs.predicted_latency[sid] = (self.net.ps_dt_latency(sid, host)
+                                          if host is not None else float("inf"))
         self.net.build(t)
-        return nxt
+        self._built_t = t
 
     def apply_action(self, dt_id, target_gs):
         if target_gs is None:
