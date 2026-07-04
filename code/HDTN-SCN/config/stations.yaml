@@ -1,0 +1,25 @@
+stations:
+  - {id: NCC_Washington, lat: 38.9072, lon: -77.0369, ncc: true, capacity: 999}
+  - {id: GS_NewYork, lat: 40.7128, lon: -74.0060}
+  - {id: GS_LosAngeles, lat: 34.0522, lon: -118.2437}
+  - {id: GS_Chicago, lat: 41.8781, lon: -87.6298}
+  - {id: GS_Toronto, lat: 43.6532, lon: -79.3832}
+  - {id: GS_London, lat: 51.5074, lon: -0.1278}
+  - {id: GS_Paris, lat: 48.8566, lon: 2.3522}
+  - {id: GS_Frankfurt, lat: 50.1109, lon: 8.6821}
+  - {id: GS_Moscow, lat: 55.7558, lon: 37.6173}
+  - {id: GS_Dubai, lat: 25.2048, lon: 55.2708}
+  - {id: GS_Mumbai, lat: 19.0760, lon: 72.8777}
+  - {id: GS_Singapore, lat: 1.3521, lon: 103.8198}
+  - {id: GS_HongKong, lat: 22.3193, lon: 114.1694}
+  - {id: GS_Tokyo, lat: 35.6762, lon: 139.6503}
+  - {id: GS_Seoul, lat: 37.5665, lon: 126.9780}
+  - {id: GS_Sydney, lat: -33.8688, lon: 151.2093}
+  - {id: GS_SaoPaulo, lat: -23.5505, lon: -46.6333}
+  - {id: GS_BuenosAires, lat: -34.6037, lon: -58.3816}
+  - {id: GS_Johannesburg, lat: -26.2041, lon: 28.0473}
+  - {id: GS_Cairo, lat: 30.0444, lon: 31.2357}
+  - {id: GS_Nairobi, lat: -1.2921, lon: 36.8219}
+  - {id: GS_Beijing, lat: 39.9042, lon: 116.4074}
+  - {id: GS_Vancouver, lat: 49.2827, lon: -123.1207}
+  - {id: GS_MexicoCity, lat: 19.4326, lon: -99.1332}
