@@ -29,6 +29,7 @@ EXCLUDE=(
     "__pycache__"
     "*.pyc"
     ".venv"
+    ".venv-gl"
     "node_modules"
     "build"
     ".eggs"
