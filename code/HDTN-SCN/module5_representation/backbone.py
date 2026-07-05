@@ -28,24 +28,29 @@ class RepresentationBackbone(nn.Module):
         if self.history is not None:
             self.history.reset()
 
+    def _device(self):
+        return next(self.parameters()).device
+
     def _graph_embed(self, net, obs):
-        graph = build_graph_tensors(net, obs)
+        graph = build_graph_tensors(net, obs).to(self._device())
         node_emb = self.gnn.encode(graph)
         return graph, node_emb
 
     def actor_features(self, agent, local_vec, net, obs, node_cache=None):
-        parts = [torch.as_tensor(local_vec, dtype=torch.float32)]
+        dev = self._device()
+        parts = [torch.as_tensor(local_vec, dtype=torch.float32, device=dev)]
         if self.use_gnn:
             if node_cache is None:
                 graph, node_emb = self._graph_embed(net, obs)
             else:
                 graph, node_emb = node_cache
             idx = graph.node_index.get(agent)
-            g = node_emb[idx] if idx is not None else torch.zeros(self.gnn_dim)
+            g = node_emb[idx] if idx is not None else torch.zeros(self.gnn_dim, device=dev)
             parts.append(g)
         if self.use_temporal:
             self.history.push(agent, local_vec)
-            parts.append(self.temporal.encode_last(self.history.sequence(agent)))
+            seq = self.history.sequence(agent).to(dev)
+            parts.append(self.temporal.encode_last(seq))
         return torch.cat(parts, dim=-1)
 
     def batch_actor_features(self, agents, local_vecs, net, obs):

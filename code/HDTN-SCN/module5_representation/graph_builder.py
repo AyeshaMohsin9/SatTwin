@@ -22,6 +22,13 @@ class GraphTensors:
     def num_nodes(self):
         return self.node_feat.shape[0]
 
+    def to(self, device):
+        self.node_feat = self.node_feat.to(device)
+        self.edge_index = self.edge_index.to(device)
+        self.edge_attr = self.edge_attr.to(device)
+        self.kind = self.kind.to(device)
+        return self
+
 
 def build_graph_tensors(net, obs, gs_capacity=1.0, delay_scale=100.0):
     G = net.G

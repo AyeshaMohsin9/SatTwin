@@ -24,6 +24,10 @@ class RewardBreakdown:
     overload: float = 0.0
     total: float = 0.0
     per_agent: dict = field(default_factory=dict)
+    raw_mean_latency: float = 0.0
+    raw_overload: float = 0.0
+    raw_migrations: int = 0
+    raw_load_var: float = 0.0
 
 
 class RewardFunction:
@@ -64,6 +68,10 @@ class RewardFunction:
         b.overload = -c.beta * overload
         b.total = b.latency + b.migration + b.load + b.aoi + b.overload
         b.per_agent = self._shaping(obs, prev_latency)
+        b.raw_mean_latency = mean_lat
+        b.raw_overload = overload
+        b.raw_migrations = n_mig
+        b.raw_load_var = lvar
         return b
 
     def _shaping(self, obs, prev_latency):
