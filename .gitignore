@@ -1,1 +1,26 @@
-*.pd
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Virtual environments (never commit — huge binaries like torch/libtorch_cpu.dylib)
+.venv/
+venv/
+env/
+**/.venv/
+**/venv/
+
+# ML / RL artifacts
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.pickle
+checkpoints/
+runs/
+wandb/
+
+# OS / editor
+.DS_Store
+*.swp
