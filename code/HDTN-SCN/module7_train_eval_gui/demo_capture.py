@@ -21,7 +21,7 @@ def _station_coords(env):
     return out
 
 
-def capture_demo(env, policy, cp_factory, n_steps=40, max_sats=30):
+def capture_demo(env, policy, cp_factory, n_steps=40, max_sats=30, dt_s=90.0):
     from module2_dt_control import DTControlPlane
     cp = cp_factory() if cp_factory else DTControlPlane(env.core, policy)
     obs = cp.reset()
@@ -29,7 +29,7 @@ def capture_demo(env, policy, cp_factory, n_steps=40, max_sats=30):
     frames = []
     for k in range(n_steps):
         prev_host = {s: cp.edge_dts[s].host_gs for s in sat_ids}
-        obs, reward, info = cp.step(obs, t=(k + 1) * cp.env.cfg.time_step_s)
+        obs, reward, info = cp.step(obs, t=(k + 1) * dt_s)
         positions = cp.env.constellation.positions(cp.env.t)
         sats = []
         migrations = []

@@ -17,25 +17,25 @@ warm_start: true
 warm_start_epochs: 5
 
 reward:
-  w_lat: 1.0
-  w_mig: 1.0
-  w_load: 0.5
+  w_lat: 4.0
+  w_mig: 0.1
+  w_load: 0.3
   w_aoi: 0.01
-  w_shaping: 0.1
+  w_shaping: 0.6
   beta: 0.0
   latency_scale: 100.0
 
 mappo:
-  lr_actor: 0.0003
+  lr_actor: 0.0004
   lr_critic: 0.001
   clip: 0.2
   value_clip: 0.2
-  entropy_coef: 0.01
+  entropy_coef: 0.02
   value_coef: 0.5
   max_grad_norm: 0.5
   epochs: 4
   minibatches: 4
-  target_kl: 0.03
+  target_kl: 0.05
   gamma: 0.99
   lam: 0.95
   normalize_adv: true

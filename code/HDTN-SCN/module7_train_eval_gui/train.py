@@ -55,6 +55,7 @@ def main():
     ap.add_argument("--iterations", type=int, default=None)
     ap.add_argument("--hours", type=float, default=None)
     ap.add_argument("--workers", type=int, default=None)
+    ap.add_argument("--resume", action="store_true")
     args = ap.parse_args()
 
     cfg = load_cfg(args.config)
@@ -71,7 +72,10 @@ def main():
         n_workers = min(n_workers, torch.cuda.device_count())
 
     bus = EventBus(args.run_dir)
-    bus.reset()
+    ckpt_path = os.path.join(args.run_dir, "checkpoint.pt")
+    resuming = args.resume and os.path.exists(ckpt_path)
+    if not resuming:
+        bus.reset()
     os.makedirs(args.run_dir, exist_ok=True)
 
     mpc = MPCLookahead(horizon=cfg["mpc_horizon"]) if cfg["use_mpc"] else None
@@ -88,7 +92,17 @@ def main():
                                         m["learner"])
     lagr = LagrangianDual(**cfg["lagrangian"])
 
-    if cfg["warm_start"]:
+    start_iter = 0
+    if resuming:
+        ck = torch.load(ckpt_path, map_location=device)
+        actor.load_state_dict(ck["actor"])
+        critic.load_state_dict(ck["critic"])
+        backbone.load_state_dict(ck["backbone"])
+        start_iter = int(ck.get("iter", 0)) + 1
+        print(f">> Resumed from checkpoint at iter {start_iter} "
+              f"(latency {ck.get('mean_latency')})", flush=True)
+
+    if cfg["warm_start"] and not resuming:
         print(">> Collecting greedy traces for warm-start...", flush=True)
         traces = collect_greedy_traces(
             _p("config", f"{cfg['con']}.yaml"), _p("config", "stations.yaml"),
@@ -125,7 +139,7 @@ def main():
     max_hours = cfg.get("max_hours", 9999)
     best_latency = float("inf")
     try:
-        for it in range(max_iters):
+        for it in range(start_iter, max_iters):
             elapsed_h = (time.time() - start) / 3600.0
             if elapsed_h >= max_hours:
                 print(f">> Reached max_hours={max_hours}", flush=True)
@@ -177,7 +191,8 @@ def main():
                                      deterministic=True, device=device)
                 demo = capture_demo(master_env, policy,
                                     lambda: DTControlPlane(master_env.core, policy),
-                                    n_steps=cfg["demo_steps"])
+                                    n_steps=cfg["demo_steps"],
+                                    dt_s=cfg.get("demo_dt_s", 150.0))
                 demo["iter"] = it
                 demo["mean_latency"] = mean_lat
                 demo["greedy_latency"] = greedy_latency
