@@ -19,6 +19,12 @@ class ScenarioConfig:
     fiber_factor: float = 0.67
     router_overhead_ms: float = 5.0
     time_step_s: float = 1.0
+    handover_penalty_ms: float = 0.0
+    handover_setup_slots: int = 0
+    elevation_penalty_ms: float = 0.0
+    rain_fade_prob: float = 0.0
+    rain_fade_penalty_ms: float = 0.0
+    rain_fade_corr: float = 0.9
 
     @property
     def n_sats(self) -> int:

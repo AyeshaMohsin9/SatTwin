@@ -31,7 +31,7 @@ def load_cfg(path):
 def build_worker_cfg(cfg):
     return {
         "scenario": _p("config", f"{cfg['con']}.yaml"),
-        "stations": _p("config", "stations.yaml"),
+        "stations": _p("config", cfg.get("stations_file", "stations.yaml")),
         "reward": cfg["reward"],
         "horizon_s": cfg["episode_horizon_s"],
         "dt_s": cfg["dt_s"],
@@ -80,7 +80,7 @@ def main():
 
     mpc = MPCLookahead(horizon=cfg["mpc_horizon"]) if cfg["use_mpc"] else None
     master_env = HDTNParallelEnv(_p("config", f"{cfg['con']}.yaml"),
-                                 _p("config", "stations.yaml"),
+                                 _p("config", cfg.get("stations_file", "stations.yaml")),
                                  reward_cfg=RewardConfig(**cfg["reward"]),
                                  horizon_s=cfg["episode_horizon_s"],
                                  dt_s=cfg["dt_s"], mpc_engine=mpc)
@@ -105,7 +105,7 @@ def main():
     if cfg["warm_start"] and not resuming:
         print(">> Collecting greedy traces for warm-start...", flush=True)
         traces = collect_greedy_traces(
-            _p("config", f"{cfg['con']}.yaml"), _p("config", "stations.yaml"),
+            _p("config", f"{cfg['con']}.yaml"), _p("config", cfg.get("stations_file", "stations.yaml")),
             horizon_s=cfg["episode_horizon_s"], dt_s=cfg["dt_s"],
             reward_cfg=RewardConfig(**cfg["reward"]))
         dim = backbone.actor_dim
@@ -122,7 +122,7 @@ def main():
 
     print(">> Computing greedy baseline latency...", flush=True)
     greedy_res = run_scheme(_p("config", f"{cfg['con']}.yaml"),
-                            _p("config", "stations.yaml"), HDTN_SCN,
+                            _p("config", cfg.get("stations_file", "stations.yaml")), HDTN_SCN,
                             horizon_s=cfg["episode_horizon_s"],
                             threshold_ms=0.0, dt_s=cfg["dt_s"])
     greedy_latency = greedy_res.mean_latency

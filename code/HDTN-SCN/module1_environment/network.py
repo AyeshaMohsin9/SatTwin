@@ -1,7 +1,7 @@
 # Module 1 — time-varying ISL/GSL/terrestrial graph and PS-DT shortest-path latency.
 import networkx as nx
 
-from .geometry import prop_delay_ms, dist_km, visible, earth_blocked
+from .geometry import prop_delay_ms, dist_km, visible, earth_blocked, elevation_deg
 
 
 class NetworkGraph:
@@ -43,13 +43,28 @@ class NetworkGraph:
                                link="isl")
 
     def _add_gsl(self, G):
+        min_el = self.cfg.min_elevation_deg
+        el_pen = self.cfg.elevation_penalty_ms
         for gid, gs in self.ground.stations.items():
             if gs.is_ncc:
                 continue
             gpos = gs.ecef
             for sid, spos in self._pos.items():
-                if visible(spos, gpos, self.cfg.min_elevation_deg):
-                    G.add_edge(gid, sid, delay=prop_delay_ms(spos, gpos), link="gsl")
+                el = elevation_deg(spos, gpos)
+                if el >= min_el:
+                    delay = prop_delay_ms(spos, gpos)
+                    if el_pen > 0.0:
+                        delay += el_pen * (1.0 - (el - min_el) / (90.0 - min_el))
+                    delay += self._fade(gid, sid)
+                    G.add_edge(gid, sid, delay=delay, link="gsl")
+
+    def _fade(self, gid, sid):
+        if self.cfg.rain_fade_penalty_ms <= 0.0:
+            return 0.0
+        state = getattr(self, "_fade_state", None)
+        if state is None:
+            return 0.0
+        return state.get(gid, 0.0)
 
     def _add_terrestrial(self, G):
         ids = list(self.ground.stations.keys())
