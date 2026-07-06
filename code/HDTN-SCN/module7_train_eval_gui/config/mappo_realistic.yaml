@@ -42,10 +42,10 @@ mappo:
   normalize_adv: true
 
 lagrangian:
-  init_beta: 0.5
-  lr: 0.1
+  init_beta: 0.1
+  lr: 0.02
   limit: 0.0
-  beta_max: 50.0
+  beta_max: 5.0
 
 iterations: 100000
 max_hours: 8.0

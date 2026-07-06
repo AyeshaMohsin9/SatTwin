@@ -60,7 +60,7 @@ class HDTNEnvironment:
         self._built_t = 0.0
         self.edge_dt_host = {}
         for sid in self.constellation.sat_ids:
-            gs, _ = self.net.nearest_gs_latency(sid)
+            gs, _ = self.net.nearest_feasible_gs(sid)
             self.edge_dt_host[sid] = gs
             self._setup_remaining[sid] = 0
             if gs is not None:

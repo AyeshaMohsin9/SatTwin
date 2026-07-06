@@ -101,6 +101,19 @@ class NetworkGraph:
                 best_gs, best_lat = gid, lat
         return best_gs, best_lat
 
+    def nearest_feasible_gs(self, sat_id):
+        cand = []
+        for gid, gs in self.ground.edge_stations().items():
+            if gs.overloaded():
+                continue
+            lat = self.ps_dt_latency(sat_id, gid)
+            if lat != float("inf"):
+                cand.append((lat, gid))
+        if not cand:
+            return None, float("inf")
+        cand.sort()
+        return cand[0][1], cand[0][0]
+
     def sat_to_ncc_isl_latency(self, sat_id):
         sat_only = self.G.subgraph(self.constellation.sat_ids)
         best = float("inf")
