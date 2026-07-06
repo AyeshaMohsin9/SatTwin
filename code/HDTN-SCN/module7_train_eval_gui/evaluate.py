@@ -62,21 +62,34 @@ def main():
     print(f">> loaded checkpoint @ iter {ck.get('iter')} "
           f"(train latency {ck.get('mean_latency'):.2f} ms)")
 
+    from module2_dt_control import HysteresisPolicy, HungarianPolicy, \
+        MPCPolicy, RandomFeasiblePolicy
+
+    def fresh_env(with_mpc):
+        return HDTNParallelEnv(scen, sta, reward_cfg=RewardConfig(**cfg["reward"]),
+                               horizon_s=args.horizon, dt_s=dt_s,
+                               mpc_engine=mpc if with_mpc else None)
+
     rows = []
     pol = MAPPOPolicy(m["backbone"], m["actor"], env.gs_ids, env.ob,
                       mpc_engine=mpc, deterministic=True, device=device)
-    res, lv = _run_policy(env, pol, args.horizon, dt_s, "MAPPO (ours)")
-    rows.append((res, lv))
+    rows.append(_run_policy(env, pol, args.horizon, dt_s, "MAPPO (ours)"))
 
-    env2 = HDTNParallelEnv(scen, sta, reward_cfg=RewardConfig(**cfg["reward"]),
-                           horizon_s=args.horizon, dt_s=dt_s, mpc_engine=None)
-    gres, glv = _run_policy(env2, GreedyNearestPolicy(threshold_ms=0.0),
-                            args.horizon, dt_s, "Greedy (HDTN-SCN)")
-    rows.append((gres, glv))
-
-    for name in [BENCH1_NO_MIGRATION, BENCH2_CENTRAL_ISL, BENCH3_CENTRAL_TERRESTRIAL]:
-        br = run_scheme(scen, sta, name, args.horizon, threshold_ms=0.0, dt_s=dt_s)
-        rows.append((br, float("nan")))
+    e = fresh_env(False)
+    rows.append(_run_policy(e, GreedyNearestPolicy(threshold_ms=0.0),
+                            args.horizon, dt_s, "Greedy nearest"))
+    e = fresh_env(False)
+    rows.append(_run_policy(e, HysteresisPolicy(margin_ms=20.0),
+                            args.horizon, dt_s, "Hysteresis (20ms)"))
+    e = fresh_env(False)
+    rows.append(_run_policy(e, HungarianPolicy(e.gs_ids),
+                            args.horizon, dt_s, "Hungarian (per-step opt)"))
+    e = fresh_env(True)
+    rows.append(_run_policy(e, MPCPolicy(mpc, e.gs_ids, e.core),
+                            args.horizon, dt_s, "MPC lookahead"))
+    e = fresh_env(False)
+    rows.append(_run_policy(e, RandomFeasiblePolicy(migrate_prob=0.3),
+                            args.horizon, dt_s, "Random-feasible"))
 
     print("\n" + "=" * 78)
     print(f"{'Scheme':<26}{'mean lat':>10}{'p95 lat':>10}{'migr/DT':>10}{'load var':>10}")

@@ -7,6 +7,10 @@ from .slicing import (
 from .migration import MigrationPolicy, MigrationExecutor
 from .policies.greedy import GreedyNearestPolicy
 from .policies.rl import RLMigrationPolicy
+from .policies.hysteresis import HysteresisPolicy
+from .policies.hungarian import HungarianPolicy
+from .policies.mpc import MPCPolicy
+from .policies.random_policy import RandomFeasiblePolicy
 from .control_plane import DTControlPlane, CENTRAL_PURPOSES
 
 __all__ = [
@@ -14,6 +18,7 @@ __all__ = [
     "MappingTable", "AddressingSystem",
     "Flow", "SlicingManager", "LOW_LATENCY", "HIGH_BW", "BEST_EFFORT",
     "DATA_TYPE_SLICE", "MigrationPolicy", "MigrationExecutor",
-    "GreedyNearestPolicy", "RLMigrationPolicy",
+    "GreedyNearestPolicy", "RLMigrationPolicy", "HysteresisPolicy",
+    "HungarianPolicy", "MPCPolicy", "RandomFeasiblePolicy",
     "DTControlPlane", "CENTRAL_PURPOSES",
 ]
