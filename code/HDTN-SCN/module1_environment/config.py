@@ -25,6 +25,8 @@ class ScenarioConfig:
     rain_fade_prob: float = 0.0
     rain_fade_penalty_ms: float = 0.0
     rain_fade_corr: float = 0.9
+    congestion_ms: float = 0.0
+    congestion_exp: float = 2.0
 
     @property
     def n_sats(self) -> int:

@@ -1,0 +1,15 @@
+>> loaded checkpoint @ iter 150 (train latency 87.99 ms)
+
+==============================================================================
+Scheme                      mean lat   p95 lat   migr/DT  load var
+------------------------------------------------------------------------------
+MAPPO (ours)                   89.23    137.18       0.0    0.9941
+Greedy nearest                 88.79    137.55       2.3    1.0702
+Hysteresis (20ms)              89.13    136.53       0.0    1.1418
+Hungarian (per-step opt)       89.29    138.39      12.7    0.9656
+MPC lookahead                  89.23    137.18       0.0    0.9941
+Random-feasible                90.21    137.55       3.0    0.9464
+==============================================================================
+
+MAPPO vs Greedy latency gap: +0.44 ms (+0.5%)
+MAPPO load variance 0.9941 vs Greedy 1.0702 (LOWER=better balance)

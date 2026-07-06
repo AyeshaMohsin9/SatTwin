@@ -79,10 +79,14 @@ class HDTNEnvironment:
         for gid, gs in self.ground.stations.items():
             obs.gs_load[gid] = gs.load
             obs.gs_capacity[gid] = gs.capacity
+        cong = self._congestion_by_gs()
         for sid in self.constellation.sat_ids:
             host = self.edge_dt_host[sid]
             obs.host[sid] = host
             cand = self.net.latencies_from_sat(sid, edge_ids)
+            if cong:
+                cand = {g: (v + cong.get(g, 0.0) if v != float("inf") else v)
+                        for g, v in cand.items()}
             obs.cand_latency[sid] = cand
             obs.latency[sid] = cand.get(host, float("inf")) if host is not None \
                 else float("inf")
@@ -117,6 +121,18 @@ class HDTNEnvironment:
         self._setup_remaining[dt_id] = self.cfg.handover_setup_slots
         return True
 
+    def _congestion_by_gs(self):
+        c = self.cfg.congestion_ms
+        if c <= 0.0:
+            return {}
+        out = {}
+        for gid, gs in self.ground.stations.items():
+            if gs.is_ncc:
+                continue
+            frac = gs.load / max(1, gs.capacity)
+            out[gid] = c * (frac ** self.cfg.congestion_exp)
+        return out
+
     def step(self, actions, t=None):
         target_t = self.t + self.cfg.time_step_s if t is None else t
         self._advance_fade()
@@ -126,13 +142,14 @@ class HDTNEnvironment:
             if self.apply_action(dt_id, target):
                 n_migrations += 1
         hp = self.cfg.handover_penalty_ms
+        cong = self._congestion_by_gs()
         latencies = []
         for sid in self.constellation.sat_ids:
             host = self.edge_dt_host[sid]
             if host is None:
                 latencies.append(float("inf"))
                 continue
-            lat = self.net.ps_dt_latency(sid, host)
+            lat = self.net.ps_dt_latency(sid, host) + cong.get(host, 0.0)
             rem = self._setup_remaining.get(sid, 0)
             if rem > 0:
                 lat += hp
