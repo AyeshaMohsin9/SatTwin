@@ -1,0 +1,3 @@
+{"iter": 0, "elapsed_s": 6.0, "sum_rate": 289.79, "min_rate": 0.2021, "jain": 0.4739, "migrations": 5778.0, "entropy": 2.7558, "policy_loss": -6e-05, "value_loss": 302.9268, "kl": -0.0}
+{"iter": 1, "elapsed_s": 11.9, "sum_rate": 293.43, "min_rate": 0.2134, "jain": 0.4675, "migrations": 5788.0, "entropy": 2.7552, "policy_loss": -0.00049, "value_loss": 286.3165, "kl": 0.00015}
+{"iter": 2, "elapsed_s": 17.8, "sum_rate": 290.31, "min_rate": 0.2034, "jain": 0.4773, "migrations": 5775.0, "entropy": 2.7501, "policy_loss": -0.00186, "value_loss": 294.3801, "kl": 0.00119}

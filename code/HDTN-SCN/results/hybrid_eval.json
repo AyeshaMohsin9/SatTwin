@@ -1,0 +1,52 @@
+{
+  "MAPPO-hybrid (ours)": {
+    "sum_rate": 385.7576723638579,
+    "min_rate": 0.0,
+    "jain": 0.22795292281161877,
+    "queue": 6.701213858695535,
+    "dropped": 671.1045964248292,
+    "flat_battery": 0,
+    "migrations": 0,
+    "reward": 0.9549020811800479
+  },
+  "Greedy nearest": {
+    "sum_rate": 330.833290193866,
+    "min_rate": 0.0,
+    "jain": 0.2996721347637082,
+    "queue": 5.776756550052489,
+    "dropped": 161.06619118718868,
+    "flat_battery": 0,
+    "migrations": 0,
+    "reward": 1.3095870357365342
+  },
+  "Hysteresis": {
+    "sum_rate": 346.18467337750855,
+    "min_rate": 0.28265547422222154,
+    "jain": 0.323098186281765,
+    "queue": 4.664509689690953,
+    "dropped": 83.66906371491206,
+    "flat_battery": 0,
+    "migrations": 0,
+    "reward": 1.8012264373369
+  },
+  "Static": {
+    "sum_rate": 319.0856234289951,
+    "min_rate": 0.5780626990997487,
+    "jain": 0.7547739407701725,
+    "queue": 2.908060597411168,
+    "dropped": 67.41956768856518,
+    "flat_battery": 0,
+    "migrations": 0,
+    "reward": 3.436352978995478
+  },
+  "Random": {
+    "sum_rate": 338.06637784524787,
+    "min_rate": 0.0,
+    "jain": 0.7504402489130537,
+    "queue": 2.432400101490026,
+    "dropped": 449.80450237620073,
+    "flat_battery": 0,
+    "migrations": 0,
+    "reward": 2.7553150366620978
+  }
+}

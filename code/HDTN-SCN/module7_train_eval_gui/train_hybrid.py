@@ -49,13 +49,22 @@ def main():
                            gnn_hidden=cfg["gnn_hidden"], gnn_layers=cfg["gnn_layers"],
                            cfg=mcfg, device=device)
     collector, learner = m["collector"], m["learner"]
+    backbone, actor, critic = m["backbone"], m["actor"], m["critic"]
+    ckpt_path = os.path.join(args.run_dir, "checkpoint.pt")
+
+    def save_ckpt(it):
+        torch.save({"actor": actor.state_dict(), "critic": critic.state_dict(),
+                    "backbone": backbone.state_dict(), "iter": it}, ckpt_path)
 
     print(f">> Hybrid MAPPO training on {cfg['con']} (device={device})", flush=True)
     start = time.time()
+    ckpt_every = cfg.get("ckpt_every", 25)
     for it in range(args.iters):
         buf, cmetrics = collector.collect(cfg["rollout_steps"])
         batch = buf.flatten()
         stats = learner.update(batch)
+        if it % ckpt_every == 0:
+            save_ckpt(it)
         record = {
             "iter": it,
             "elapsed_s": round(time.time() - start, 1),
@@ -74,6 +83,7 @@ def main():
               f"min={record['min_rate']:.3f} mig={record['migrations']:5.0f} "
               f"ent={record['entropy']:.3f} pl={record['policy_loss']:.4f} "
               f"vl={record['value_loss']:.3f} kl={record['kl']:.4f}", flush=True)
+    save_ckpt(args.iters - 1)
     print(">> Hybrid training done.", flush=True)
 
 
