@@ -9,21 +9,24 @@ cpu_threads_per_worker: 4
 
 use_mpc: true
 mpc_horizon: 6
+anchor_bias: 0.0
 use_gnn: true
 use_temporal: true
 gnn_hidden: 64
 gnn_layers: 2
 
-warm_start: true
+warm_start: false
 warm_start_epochs: 5
 
 reward:
-  w_lat: 4.0
+  objective: rate
+  w_sumrate: 1.0
+  w_minrate: 1.0
+  w_jain: 2.0
   w_mig: 0.3
-  w_load: 1.0
-  w_aoi: 0.01
-  w_shaping: 0.8
+  w_shaping: 0.5
   beta: 0.0
+  rate_scale: 500.0
   latency_scale: 100.0
 
 mappo:

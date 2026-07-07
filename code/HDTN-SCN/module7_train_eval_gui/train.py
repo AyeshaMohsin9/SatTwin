@@ -87,7 +87,8 @@ def main():
     mcfg = MAPPOConfig(**cfg["mappo"])
     m = build_mappo(master_env, mpc_engine=mpc, use_gnn=cfg["use_gnn"],
                     use_temporal=cfg["use_temporal"], gnn_hidden=cfg["gnn_hidden"],
-                    gnn_layers=cfg["gnn_layers"], cfg=mcfg, device=device)
+                    gnn_layers=cfg["gnn_layers"], anchor_bias=cfg.get("anchor_bias", 3.0),
+                    cfg=mcfg, device=device)
     backbone, actor, critic, learner = (m["backbone"], m["actor"], m["critic"],
                                         m["learner"])
     lagr = LagrangianDual(**cfg["lagrangian"])
@@ -155,6 +156,9 @@ def main():
             mean_ret = float(np.mean([w["return"] for w in wmetrics]))
             mean_lat = float(np.nanmean([w["mean_latency"] for w in wmetrics]))
             mean_mig = float(np.mean([w["migrations"] for w in wmetrics]))
+            sum_rate = float(np.mean([w.get("sum_rate", 0.0) for w in wmetrics]))
+            min_rate = float(np.mean([w.get("min_rate", 0.0) for w in wmetrics]))
+            jain = float(np.mean([w.get("jain", 0.0) for w in wmetrics]))
             record = {
                 "iter": it,
                 "elapsed_s": round(time.time() - start, 1),
@@ -164,6 +168,9 @@ def main():
                 "migrations": round(mean_mig, 1),
                 "overload": round(overload, 4),
                 "beta": round(beta, 4),
+                "sum_rate": round(sum_rate, 2),
+                "min_rate": round(min_rate, 4),
+                "jain": round(jain, 4),
                 "policy_loss": round(stats["policy_loss"], 5),
                 "value_loss": round(stats["value_loss"], 4),
                 "entropy": round(stats["entropy"], 4),
@@ -178,10 +185,10 @@ def main():
                               "running": True})
 
             if it % cfg["log_every"] == 0:
-                print(f"[{it:5d}] ret={mean_ret:7.3f} lat={mean_lat:6.2f} "
-                      f"(greedy {greedy_latency:.2f}) mig={mean_mig:5.1f} "
-                      f"ent={stats['entropy']:.3f} kl={stats['kl']:.4f} "
-                      f"beta={beta:.3f} {elapsed_h:.2f}h", flush=True)
+                print(f"[{it:5d}] ret={mean_ret:7.2f} rate={sum_rate:6.1f} "
+                      f"jain={jain:.3f} min={min_rate:.2f} mig={mean_mig:5.0f} "
+                      f"lat={mean_lat:5.1f} ent={stats['entropy']:.3f} "
+                      f"beta={beta:.2f} {elapsed_h:.2f}h", flush=True)
 
             if it % cfg["demo_every"] == 0:
                 from module6_mappo import MAPPOPolicy

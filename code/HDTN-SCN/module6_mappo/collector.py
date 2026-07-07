@@ -53,6 +53,7 @@ class Collector:
         if not self.env.agents:
             obs, _ = self.env.reset()
         ep_return, ep_lat, ep_mig, ep_over = 0.0, [], 0, []
+        ep_sum, ep_min, ep_jain = [], [], []
         for _ in range(n_steps):
             (feats, masks, anchors, actions, logps, state, value,
              anchors_np) = self._forward(obs)
@@ -76,6 +77,9 @@ class Collector:
                 ep_lat.append(b.raw_mean_latency)
                 ep_mig += b.raw_migrations
                 ep_over.append(b.raw_overload)
+                ep_sum.append(b.raw_sum_rate)
+                ep_min.append(b.raw_min_rate)
+                ep_jain.append(b.raw_jain)
             obs = next_obs
             if done:
                 obs, _ = self.env.reset()
@@ -86,5 +90,8 @@ class Collector:
             "mean_latency": float(np.mean(ep_lat)) if ep_lat else float("nan"),
             "migrations": ep_mig,
             "mean_overload": float(np.mean(ep_over)) if ep_over else 0.0,
+            "sum_rate": float(np.mean(ep_sum)) if ep_sum else 0.0,
+            "min_rate": float(np.mean(ep_min)) if ep_min else 0.0,
+            "jain": float(np.mean(ep_jain)) if ep_jain else 0.0,
         }
         return self.buffer, metrics

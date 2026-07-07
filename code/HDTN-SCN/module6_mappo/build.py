@@ -26,6 +26,6 @@ def build_mappo(env, mpc_engine=None, use_gnn=True, use_temporal=True,
         hidden=critic_hidden).to(device)
     learner = MAPPOLearner(actor, critic, cfg or MAPPOConfig(), device=device)
     collector = Collector(env, backbone, actor, critic, mpc_engine=mpc_engine,
-                          device=device)
+                          anchor_from_mpc=(anchor_bias > 0.0), device=device)
     return {"backbone": backbone, "actor": actor, "critic": critic,
             "learner": learner, "collector": collector}

@@ -133,6 +133,35 @@ class HDTNEnvironment:
             out[gid] = c * (frac ** self.cfg.congestion_exp)
         return out
 
+    def data_rates(self, latencies):
+        import math
+        cfg = self.cfg
+        counts = {}
+        for sid in self.constellation.sat_ids:
+            h = self.edge_dt_host.get(sid)
+            if h is not None:
+                counts[h] = counts.get(h, 0) + 1
+        rates = []
+        for sid, lat in zip(self.constellation.sat_ids, latencies):
+            h = self.edge_dt_host.get(sid)
+            if h is None or lat == float("inf"):
+                rates.append(0.0)
+                continue
+            sinr = (cfg.sinr_ref_ms / max(1.0, lat)) / cfg.noise_floor
+            spec_eff = math.log2(1.0 + max(0.0, sinr))
+            share = cfg.gateway_bandwidth / max(1, counts.get(h, 1))
+            rates.append(spec_eff * share)
+        return rates
+
+    def rate_metrics(self, rates):
+        import numpy as np
+        r = np.asarray(rates, dtype=float)
+        s = float(r.sum())
+        mn = float(r.min()) if len(r) else 0.0
+        jain = float(s * s / (len(r) * float((r * r).sum()) + 1e-9)) if len(r) else 0.0
+        return {"sum_rate": s, "min_rate": mn, "jain": jain,
+                "mean_rate": s / max(1, len(r))}
+
     def step(self, actions, t=None):
         target_t = self.t + self.cfg.time_step_s if t is None else t
         self._advance_fade()
@@ -157,7 +186,10 @@ class HDTNEnvironment:
             latencies.append(lat)
         self.t = target_t
         mean_lat = sum(latencies) / len(latencies)
+        rates = self.data_rates(latencies)
+        rmet = self.rate_metrics(rates)
         reward = -(mean_lat + self.cfg.migration_cost * n_migrations)
         info = {"latencies": latencies, "n_migrations": n_migrations,
-                "mean_latency": mean_lat, "t": target_t}
+                "mean_latency": mean_lat, "t": target_t,
+                "rates": rates, **rmet}
         return self.observe(target_t), reward, info
