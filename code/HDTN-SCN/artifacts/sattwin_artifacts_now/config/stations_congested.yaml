@@ -1,0 +1,19 @@
+stations:
+  - {id: NCC_Washington, lat: 38.9072, lon: -77.0369, ncc: true, capacity: 999}
+  - {id: GS_NewYork, lat: 40.7128, lon: -74.0060, capacity: 5}
+  - {id: GS_Dallas, lat: 32.7767, lon: -96.7970, capacity: 5}
+  - {id: GS_Denver, lat: 39.7392, lon: -104.9903, capacity: 5}
+  - {id: GS_LosAngeles, lat: 34.0522, lon: -118.2437, capacity: 5}
+  - {id: GS_Seattle, lat: 47.6062, lon: -122.3321, capacity: 5}
+  - {id: GS_Chicago, lat: 41.8781, lon: -87.6298, capacity: 5}
+  - {id: GS_Miami, lat: 25.7617, lon: -80.1918, capacity: 5}
+  - {id: GS_London, lat: 51.5074, lon: -0.1278, capacity: 5}
+  - {id: GS_Frankfurt, lat: 50.1109, lon: 8.6821, capacity: 5}
+  - {id: GS_Madrid, lat: 40.4168, lon: -3.7038, capacity: 5}
+  - {id: GS_Rome, lat: 41.9028, lon: 12.4964, capacity: 5}
+  - {id: GS_Warsaw, lat: 52.2297, lon: 21.0122, capacity: 5}
+  - {id: GS_Tokyo, lat: 35.6762, lon: 139.6503, capacity: 5}
+  - {id: GS_Seoul, lat: 37.5665, lon: 126.9780, capacity: 5}
+  - {id: GS_Beijing, lat: 39.9042, lon: 116.4074, capacity: 5}
+  - {id: GS_Singapore, lat: 1.3521, lon: 103.8198, capacity: 5}
+  - {id: GS_Mumbai, lat: 19.0760, lon: 72.8777, capacity: 5}
