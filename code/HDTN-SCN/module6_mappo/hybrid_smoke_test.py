@@ -52,7 +52,7 @@ def test_bw_weights_vary():
     m = build_hybrid_mappo(env, mpc_engine=mpc, gnn_hidden=32, gnn_layers=2, device=DEV)
     obs, _ = env.reset()
     policy = HybridPolicy(m["backbone"], m["actor"], env.gs_ids, env.ob,
-                          mpc_engine=mpc, deterministic=False, device=DEV)
+                          mpc_engine=mpc, stochastic=True, device=DEV)
     weights = policy.bw_weights(env.core, env._obs)
     vals = np.asarray(list(weights.values()), dtype=np.float32)
     assert vals.std() > 0.0, f"bw weights degenerate (std={vals.std()})"

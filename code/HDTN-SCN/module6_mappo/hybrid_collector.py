@@ -63,7 +63,18 @@ class HybridCollector:
         if done:
             env.agents = []
         rewards = {a: float(rewards[a]) for a in self.agents}
-        return obs_dict, rewards, done, breakdown
+        return obs_dict, rewards, done, breakdown, info
+
+    def _local_reward(self, info):
+        rc = self.env.reward_fn.cfg
+        rates = info.get("rates", [])
+        qcap = max(1e-6, rc.queue_scale)
+        obs = self.env._obs
+        out = np.zeros(self.n_agents, dtype=np.float32)
+        for i, (a, r) in enumerate(zip(self.agents, rates)):
+            q = obs.queue.get(a, 0.0) if getattr(obs, "queue", None) else 0.0
+            out[i] = rc.w_sumrate * (float(r) / rc.rate_scale) - rc.w_queue * (q / qcap)
+        return out
 
     def collect(self, n_steps):
         self.buffer.clear()
@@ -72,12 +83,14 @@ class HybridCollector:
             obs, _ = self.env.reset()
         ep_return, ep_mig = 0.0, 0
         ep_sum, ep_min, ep_jain = [], [], []
+        ep_drop, ep_exp, ep_aoi, ep_flat, ep_bat = 0.0, 0.0, [], 0, []
         for _ in range(n_steps):
             feats, masks, a_gw, a_bw, logps, state, value = self._forward(obs)
             next_t = self.env.t + self.env.dt_s
-            next_obs, rewards, done, breakdown = self._apply(a_gw, a_bw, next_t)
+            next_obs, rewards, done, breakdown, info = self._apply(a_gw, a_bw, next_t)
             r_vec = np.asarray([rewards.get(a, 0.0) for a in self.agents],
                                dtype=np.float32)
+            local_r = self._local_reward(info)
             self.buffer.add(
                 feats.detach().cpu().numpy(),
                 masks.detach().cpu().numpy(),
@@ -85,13 +98,18 @@ class HybridCollector:
                 a_bw.detach().cpu().numpy(),
                 logps.detach().cpu().numpy(),
                 r_vec, value,
-                state.detach().cpu().numpy(), done)
+                state.detach().cpu().numpy(), done, local_r)
             if breakdown is not None:
                 ep_return += float(np.mean(r_vec))
                 ep_mig += breakdown.raw_migrations
                 ep_sum.append(breakdown.raw_sum_rate)
                 ep_min.append(breakdown.raw_min_rate)
                 ep_jain.append(breakdown.raw_jain)
+                ep_drop += breakdown.raw_dropped
+                ep_exp += float(info.get("expired", 0.0))
+                ep_aoi.append(float(info.get("mean_aoi", 0.0)))
+                ep_flat += breakdown.raw_flat_battery
+                ep_bat.append(float(info.get("mean_battery", 0.0)))
             obs = next_obs
             if done:
                 obs, _ = self.env.reset()
@@ -103,5 +121,10 @@ class HybridCollector:
             "sum_rate": float(np.mean(ep_sum)) if ep_sum else 0.0,
             "min_rate": float(np.mean(ep_min)) if ep_min else 0.0,
             "jain": float(np.mean(ep_jain)) if ep_jain else 0.0,
+            "dropped": ep_drop,
+            "expired": ep_exp,
+            "mean_aoi": float(np.mean(ep_aoi)) if ep_aoi else 0.0,
+            "flat_battery": ep_flat,
+            "mean_battery": float(np.mean(ep_bat)) if ep_bat else 0.0,
         }
         return self.buffer, metrics

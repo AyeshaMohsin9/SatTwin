@@ -62,7 +62,7 @@ def main():
     for it in range(args.iters):
         buf, cmetrics = collector.collect(cfg["rollout_steps"])
         batch = buf.flatten()
-        stats = learner.update(batch)
+        stats = learner.update(batch, iter=it, total_iters=args.iters)
         if it % ckpt_every == 0:
             save_ckpt(it)
         record = {
@@ -72,7 +72,13 @@ def main():
             "min_rate": round(cmetrics["min_rate"], 4),
             "jain": round(cmetrics["jain"], 4),
             "migrations": round(float(cmetrics["migrations"]), 1),
+            "dropped": round(float(cmetrics["dropped"]), 1),
+            "expired": round(float(cmetrics["expired"]), 1),
+            "mean_aoi": round(float(cmetrics["mean_aoi"]), 2),
+            "flat_battery": round(float(cmetrics["flat_battery"]), 1),
+            "mean_battery": round(float(cmetrics["mean_battery"]), 3),
             "entropy": round(stats["entropy"], 4),
+            "entropy_coef": round(stats["entropy_coef"], 5),
             "policy_loss": round(stats["policy_loss"], 5),
             "value_loss": round(stats["value_loss"], 4),
             "kl": round(stats["kl"], 5),

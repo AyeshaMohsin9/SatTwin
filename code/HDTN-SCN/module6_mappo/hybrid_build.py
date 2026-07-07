@@ -9,7 +9,7 @@ from .hybrid_collector import HybridCollector
 
 def build_hybrid_mappo(env, mpc_engine=None, use_gnn=True, use_temporal=True,
                        gnn_hidden=64, gnn_layers=2, actor_hidden=128,
-                       critic_hidden=256, cfg=None, device="cpu"):
+                       critic_hidden=512, cfg=None, device="cpu"):
     local_dim = env.ob.local_dim()
     if mpc_engine is not None:
         local_dim += mpc_engine.feature_dim(env.ob.n_gs)

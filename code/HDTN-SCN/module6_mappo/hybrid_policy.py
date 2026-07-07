@@ -8,13 +8,14 @@ from module4_marl_env.action_space import decode, decode_bw
 
 class HybridPolicy(MigrationPolicy):
     def __init__(self, backbone, actor, gs_ids, ob, mpc_engine=None,
-                 deterministic=True, device="cpu"):
+                 stochastic=False, temperature=0.5, device="cpu"):
         self.backbone = backbone
         self.actor = actor
         self.gs_ids = gs_ids
         self.ob = ob
         self.mpc_engine = mpc_engine
-        self.deterministic = deterministic
+        self.stochastic = stochastic
+        self.temperature = temperature
         self.device = device
 
     def reset(self):
@@ -33,8 +34,11 @@ class HybridPolicy(MigrationPolicy):
         feat = self._feat(sat_id, core, obs)
         mask = torch.as_tensor(feasible(sat_id, obs, self.gs_ids),
                                device=feat.device).unsqueeze(0)
-        a_gw, _, _, _ = self.actor.act(feat.unsqueeze(0), mask,
-                                       deterministic=self.deterministic)
+        if self.stochastic:
+            a_gw, _, _, _ = self.actor.act(feat.unsqueeze(0), mask)
+        else:
+            a_gw, _, _, _ = self.actor.eval_act(
+                feat.unsqueeze(0), mask, temperature=self.temperature)
         return decode(int(a_gw.item()), self.gs_ids)
 
     @torch.no_grad()
@@ -44,8 +48,11 @@ class HybridPolicy(MigrationPolicy):
             feat = self._feat(sat_id, env_core, obs)
             mask = torch.as_tensor(feasible(sat_id, obs, self.gs_ids),
                                    device=feat.device).unsqueeze(0)
-            _, a_bw, _, _ = self.actor.act(feat.unsqueeze(0), mask,
-                                           deterministic=self.deterministic)
+            if self.stochastic:
+                _, a_bw, _, _ = self.actor.act(feat.unsqueeze(0), mask)
+            else:
+                _, a_bw, _, _ = self.actor.eval_act(
+                    feat.unsqueeze(0), mask, temperature=self.temperature)
             out[sat_id] = decode_bw(float(a_bw.item()))
         return out
 

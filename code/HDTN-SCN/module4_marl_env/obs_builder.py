@@ -30,7 +30,7 @@ class ObsBuilder:
         return 6 + 3 * self.n_gs
 
     def global_dim(self):
-        return len(self.sat_ids) * (1 + self.n_gs) + 2 * self.n_gs
+        return len(self.sat_ids) * (3 + self.n_gs) + 2 * self.n_gs
 
     def reset(self):
         self.last_migration_t = {s: 0.0 for s in self.sat_ids}
@@ -69,14 +69,18 @@ class ObsBuilder:
 
     def global_state(self, obs):
         parts = []
+        qcap = max(1.0, getattr(self.env.cfg, "buffer_capacity", 30.0))
+        bcap = max(1.0, getattr(self.env.cfg, "battery_capacity", 100.0))
         for s in self.sat_ids:
             host = obs.host.get(s)
             onehot = np.zeros(self.n_gs, dtype=np.float32)
             if host in self._gs_index:
                 onehot[self._gs_index[host]] = 1.0
             parts.append(onehot)
-            parts.append(np.asarray([_norm_lat(obs.latency.get(s, float("inf")))],
-                                    dtype=np.float32))
+            q = min(1.5, obs.queue.get(s, 0.0) / qcap) if obs.queue else 0.0
+            bat = (obs.battery.get(s, bcap) / bcap) if obs.battery else 1.0
+            parts.append(np.asarray([_norm_lat(obs.latency.get(s, float("inf"))),
+                                     q, bat], dtype=np.float32))
         loads = np.asarray([obs.gs_load.get(g, 0) / max(1, obs.gs_capacity.get(g, 1))
                             for g in self.gs_ids], dtype=np.float32)
         caps = np.asarray([1.0 for g in self.gs_ids],

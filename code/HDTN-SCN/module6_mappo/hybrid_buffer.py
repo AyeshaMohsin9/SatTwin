@@ -19,19 +19,23 @@ class HybridRolloutBuffer:
         self.a_bw = []
         self.logps = []
         self.rewards = []
+        self.local_r = []
         self.values = []
         self.state = []
         self.dones = []
         self.adv = None
         self.ret = None
 
-    def add(self, feats, masks, a_gw, a_bw, logps, rewards, value, state, done):
+    def add(self, feats, masks, a_gw, a_bw, logps, rewards, value, state, done,
+            local_r=None):
         self.feats.append(feats)
         self.masks.append(masks)
         self.a_gw.append(a_gw)
         self.a_bw.append(a_bw)
         self.logps.append(logps)
         self.rewards.append(rewards)
+        self.local_r.append(local_r if local_r is not None
+                             else np.zeros(self.n_agents, dtype=np.float32))
         self.values.append(value)
         self.state.append(state)
         self.dones.append(done)
@@ -68,6 +72,9 @@ class HybridRolloutBuffer:
         adv = torch.as_tensor(self.adv, dtype=torch.float32).to(dev)
         ret = torch.as_tensor(self.ret, dtype=torch.float32).to(dev)
         A = self.n_agents
+        local = np.stack(self.local_r).astype(np.float32)
+        local_dev = local - local.mean(axis=1, keepdims=True)
+        local_dev = torch.as_tensor(local_dev, dtype=torch.float32).to(dev)
         return {
             "feats": feats.reshape(T * A, -1),
             "masks": masks.reshape(T * A, -1),
@@ -76,6 +83,7 @@ class HybridRolloutBuffer:
             "logps": logps.reshape(T * A),
             "states": states,
             "adv_agent": adv.repeat_interleave(A),
+            "local_dev": local_dev.reshape(T * A),
             "ret": ret,
             "T": T,
             "A": A,

@@ -46,6 +46,9 @@ mappo:
   gamma: 0.99
   lam: 0.95
   normalize_adv: true
+  entropy_coef_final: 0.001
+  entropy_anneal_iters: 1500
+  local_credit: 0.3
 
 lagrangian:
   init_beta: 0.1

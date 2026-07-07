@@ -52,6 +52,9 @@ class ScenarioConfig:
     low_battery_frac: float = 0.15
     soft_capacity: bool = False
     overload_cap_mult: float = 2.5
+    data_deadline_slots: int = 0
+    aoi_penalty: float = 0.0
+    prebuffer_bonus: float = 0.0
 
     @property
     def n_sats(self) -> int:

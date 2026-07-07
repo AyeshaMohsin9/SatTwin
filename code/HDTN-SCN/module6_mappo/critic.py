@@ -4,9 +4,10 @@ import torch.nn as nn
 
 
 class CentralCritic(nn.Module):
-    def __init__(self, state_dim, gnn_dim=0, hidden=256):
+    def __init__(self, state_dim, gnn_dim=0, hidden=512):
         super().__init__()
         in_dim = state_dim + gnn_dim
+        self.in_norm = nn.LayerNorm(in_dim)
         self.net = nn.Sequential(
             nn.Linear(in_dim, hidden), nn.Tanh(),
             nn.Linear(hidden, hidden), nn.Tanh(),
@@ -21,4 +22,4 @@ class CentralCritic(nn.Module):
     def forward(self, state, graph_embed=None):
         if self.gnn_dim > 0 and graph_embed is not None:
             state = torch.cat([state, graph_embed], dim=-1)
-        return self.net(state).squeeze(-1)
+        return self.net(self.in_norm(state)).squeeze(-1)

@@ -24,6 +24,7 @@ class HDTNEnvironment:
         self.queue = {}
         self.battery = {}
         self._dropped = {}
+        self._age = {}
         self._sat_phase = {}
 
     @classmethod
@@ -56,6 +57,7 @@ class HDTNEnvironment:
         self.queue = {s: 0.0 for s in self.constellation.sat_ids}
         self.battery = {s: self.cfg.battery_capacity for s in self.constellation.sat_ids}
         self._dropped = {s: 0.0 for s in self.constellation.sat_ids}
+        self._age = {s: 0.0 for s in self.constellation.sat_ids}
         for i, s in enumerate(self.constellation.sat_ids):
             self._sat_phase[s] = 2.0 * math.pi * (i / max(1, len(self.constellation.sat_ids)))
 
@@ -83,25 +85,39 @@ class HDTNEnvironment:
             h = self.edge_dt_host.get(s)
             if h is not None:
                 gw_count[h] = gw_count.get(h, 0) + 1
-        info = {"queue": 0.0, "dropped": 0.0, "flat_battery": 0, "overflow": 0}
+        info = {"queue": 0.0, "dropped": 0.0, "flat_battery": 0, "overflow": 0,
+                "aoi": 0.0, "expired": 0}
         for sid, lat in zip(self.constellation.sat_ids, latencies):
             h = self.edge_dt_host.get(sid)
             bat = self.battery.get(sid, cfg.battery_capacity)
             if cfg.queue_enabled:
                 self.queue[sid] = self.queue.get(sid, 0.0) + self._arrival(sid, target_t)
                 can_tx = (not cfg.battery_enabled) or bat > 0.0
+                drained = 0.0
                 if h is not None and lat != float("inf") and can_tx:
                     svc = cfg.gateway_service / max(1, gw_count.get(h, 1))
                     drained = min(self.queue[sid], svc)
                     self.queue[sid] -= drained
                     if cfg.battery_enabled:
                         bat -= cfg.tx_energy * (drained / max(1e-6, cfg.gateway_service))
+                if drained > 0.0:
+                    self._age[sid] = 0.0 if self.queue[sid] <= 1e-6 else max(0.0, self._age[sid] - 1.0)
+                else:
+                    self._age[sid] = self._age.get(sid, 0.0) + (1.0 if self.queue[sid] > 1e-6 else 0.0)
+                if cfg.data_deadline_slots > 0 and self._age[sid] > cfg.data_deadline_slots:
+                    expired = self.queue[sid]
+                    self._dropped[sid] += expired
+                    info["dropped"] += expired
+                    info["expired"] += 1
+                    self.queue[sid] = 0.0
+                    self._age[sid] = 0.0
                 if self.queue[sid] > cfg.buffer_capacity:
                     self._dropped[sid] += self.queue[sid] - cfg.buffer_capacity
                     info["dropped"] += self.queue[sid] - cfg.buffer_capacity
                     self.queue[sid] = cfg.buffer_capacity
                     info["overflow"] += 1
                 info["queue"] += self.queue[sid]
+                info["aoi"] += self._age[sid]
             if cfg.battery_enabled:
                 if migrated.get(sid):
                     bat -= cfg.migrate_energy
@@ -113,6 +129,7 @@ class HDTNEnvironment:
                     info["flat_battery"] += 1
         n = max(1, len(self.constellation.sat_ids))
         info["queue"] /= n
+        info["aoi"] /= n
         return info
 
     def _advance_surges(self):
@@ -321,6 +338,8 @@ class HDTNEnvironment:
             info["dropped"] = st["dropped"]
             info["overflow"] = st["overflow"]
             info["flat_battery"] = st["flat_battery"]
+            info["mean_aoi"] = st["aoi"]
+            info["expired"] = st["expired"]
             info["mean_battery"] = (sum(self.battery.values()) / max(1, len(self.battery))
                                     if self.cfg.battery_enabled else 0.0)
         return self.observe(target_t), reward, info

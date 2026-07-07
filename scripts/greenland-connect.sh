@@ -25,17 +25,17 @@ JOB_ROLE_ARN="arn:aws:iam::072510399842:role/greenland-access-37f871283e3e69fdbf
 REMOTE_PORT="2222"
 LOCAL_PORT="1049"
 SSH_USER="greenland-user"
-# Job: cmohsinm-workspace (EKS: cmohsinm-workspace-80a981b3)  -- SatTwin instance
+# Job: cmohsinm-workspace (EKS: cmohsinm-workspace-79e371d2)  -- SatTwin instance
 # Instances: 1x p4d.24xlarge (single main-node), 8x A100 = 8 GPUs, us-east-2
 # Initiative: KiroScienceInterns
 # NOTE: keep this on port 1049 (unique from other experiments' instances).
 #
 # Single-node job: only the MAIN node exists and runs the SSM agent, so this is
 # the single tunnel target. No worker nodes for this reservation.
-SSM_TARGET="mi-01221877868ab65c2"   # main-node SsmManagedInstanceId (from job JSON)
-# Node internal IP (NodesEniHostIP): main=10.3.90.115
-MAIN_NODE_IP="10.3.90.115"
-MAIN_NODE_INSTANCE_ID="i-0111dd9820c4f283e"
+SSM_TARGET="mi-0eeb767a3ef638218"   # main-node SsmManagedInstanceId (from job JSON)
+# Node internal IP (NodesEniHostIP): main=10.3.39.252
+MAIN_NODE_IP="10.3.39.252"
+MAIN_NODE_INSTANCE_ID="i-0f18e7782c28a6aa8"
 # ----------------------------------------------------------------------
 
 auth() {

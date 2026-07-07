@@ -1,7 +1,29 @@
-# Module 6 — hybrid MAPPO learner: PPO-clip over joint gateway+bandwidth actor with clipped-value critic.
+# Module 6 — hybrid MAPPO learner: PPO-clip with return normalization, entropy anneal, and per-agent local credit.
 import numpy as np
 import torch
 import torch.nn as nn
+
+
+class RunningNorm:
+    def __init__(self):
+        self.mean = 0.0
+        self.var = 1.0
+        self.count = 1e-4
+
+    def update(self, x):
+        x = np.asarray(x, dtype=np.float64)
+        bmean, bvar, bcount = x.mean(), x.var(), x.size
+        delta = bmean - self.mean
+        tot = self.count + bcount
+        self.mean += delta * bcount / tot
+        m_a = self.var * self.count
+        m_b = bvar * bcount
+        self.var = (m_a + m_b + delta ** 2 * self.count * bcount / tot) / tot
+        self.count = tot
+
+    @property
+    def std(self):
+        return float(np.sqrt(self.var) + 1e-8)
 
 
 class HybridMAPPOLearner:
@@ -12,25 +34,43 @@ class HybridMAPPOLearner:
         self.device = device
         self.opt_actor = torch.optim.Adam(actor.parameters(), lr=cfg.lr_actor)
         self.opt_critic = torch.optim.Adam(critic.parameters(), lr=cfg.lr_critic)
+        self.ret_norm = RunningNorm()
 
-    def update(self, batch, state_graph_embed=None):
+    def _entropy_coef(self, iter):
+        c = self.cfg
+        final = c.entropy_coef if c.entropy_coef_final is None else c.entropy_coef_final
+        if c.entropy_anneal_iters <= 0:
+            return c.entropy_coef
+        frac = min(1.0, float(iter) / float(c.entropy_anneal_iters))
+        return c.entropy_coef + frac * (final - c.entropy_coef)
+
+    def update(self, batch, state_graph_embed=None, iter=0, total_iters=0):
         c = self.cfg
         feats = batch["feats"]; masks = batch["masks"]
         a_gw = batch["a_gw"]; a_bw = batch["a_bw"]; old_logps = batch["logps"]
-        adv_agent = batch["adv_agent"]
+        adv_agent = batch["adv_agent"] + c.local_credit * batch["local_dev"]
         ret = batch["ret"]; states = batch["states"]
         T, A = batch["T"], batch["A"]
+        ent_coef = self._entropy_coef(iter)
+
+        self.ret_norm.update(ret.detach().cpu().numpy())
+        ret_mean = torch.as_tensor(self.ret_norm.mean, dtype=torch.float32,
+                                   device=self.device)
+        ret_std = torch.as_tensor(self.ret_norm.std, dtype=torch.float32,
+                                  device=self.device)
+        ret_n = (ret - ret_mean) / ret_std
 
         if c.normalize_adv:
             adv_agent = (adv_agent - adv_agent.mean()) / (adv_agent.std() + 1e-8)
 
         with torch.no_grad():
-            old_values = self.critic(states, state_graph_embed)
+            old_values = (self.critic(states, state_graph_embed) - ret_mean) / ret_std
 
         n = feats.shape[0]
         idx = np.arange(n)
         mb_size = max(1, n // c.minibatches)
-        stats = {"policy_loss": 0, "value_loss": 0, "entropy": 0, "kl": 0, "clipfrac": 0}
+        stats = {"policy_loss": 0, "value_loss": 0, "entropy": 0, "kl": 0,
+                 "clipfrac": 0, "entropy_coef": ent_coef}
         count = 0
         stop = False
         for _ in range(c.epochs):
@@ -53,7 +93,7 @@ class HybridMAPPOLearner:
                 clipfrac = ((ratio - 1.0).abs() > c.clip).float().mean().item()
 
                 self.opt_actor.zero_grad()
-                (policy_loss - c.entropy_coef * entropy).backward()
+                (policy_loss - ent_coef * entropy).backward()
                 nn.utils.clip_grad_norm_(self.actor.parameters(), c.max_grad_norm)
                 self.opt_actor.step()
 
@@ -74,11 +114,11 @@ class HybridMAPPOLearner:
             for start in range(0, T, vmb):
                 mb = torch.as_tensor(state_idx[start:start + vmb],
                                      dtype=torch.long, device=self.device)
-                values = self.critic(states[mb], state_graph_embed)
+                values = (self.critic(states[mb], state_graph_embed) - ret_mean) / ret_std
                 v_clipped = old_values[mb] + torch.clamp(
                     values - old_values[mb], -c.value_clip, c.value_clip)
-                vl1 = (values - ret[mb]) ** 2
-                vl2 = (v_clipped - ret[mb]) ** 2
+                vl1 = (values - ret_n[mb]) ** 2
+                vl2 = (v_clipped - ret_n[mb]) ** 2
                 value_loss = c.value_coef * torch.max(vl1, vl2).mean()
                 self.opt_critic.zero_grad()
                 value_loss.backward()

@@ -21,6 +21,9 @@ class MAPPOConfig:
     gamma: float = 0.99
     lam: float = 0.95
     normalize_adv: bool = True
+    entropy_coef_final: float = None
+    entropy_anneal_iters: int = 0
+    local_credit: float = 0.3
 
 
 class MAPPOLearner:
