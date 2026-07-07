@@ -18,6 +18,10 @@ class RewardConfig:
     w_minrate: float = 1.0
     w_jain: float = 1.0
     rate_scale: float = 100.0
+    w_queue: float = 0.0
+    w_drop: float = 0.0
+    w_battery: float = 0.0
+    queue_scale: float = 30.0
 
 
 @dataclass
@@ -39,6 +43,12 @@ class RewardBreakdown:
     raw_sum_rate: float = 0.0
     raw_min_rate: float = 0.0
     raw_jain: float = 0.0
+    queue: float = 0.0
+    drop: float = 0.0
+    battery: float = 0.0
+    raw_queue: float = 0.0
+    raw_dropped: float = 0.0
+    raw_flat_battery: int = 0
 
 
 class RewardFunction:
@@ -81,11 +91,18 @@ class RewardFunction:
         b.raw_sum_rate = float(info.get("sum_rate", 0.0))
         b.raw_min_rate = float(info.get("min_rate", 0.0))
         b.raw_jain = float(info.get("jain", 0.0))
+        b.raw_queue = float(info.get("mean_queue", 0.0))
+        b.raw_dropped = float(info.get("dropped", 0.0))
+        b.raw_flat_battery = int(info.get("flat_battery", 0))
         if c.objective == "rate":
             b.sumrate = c.w_sumrate * (b.raw_sum_rate / c.rate_scale)
             b.minrate = c.w_minrate * b.raw_min_rate
             b.jain = c.w_jain * b.raw_jain
-            b.total = b.sumrate + b.minrate + b.jain + b.migration + b.overload
+            b.queue = -c.w_queue * (b.raw_queue / max(1e-6, c.queue_scale))
+            b.drop = -c.w_drop * (b.raw_dropped / max(1, len(self.ob.sat_ids)))
+            b.battery = -c.w_battery * (b.raw_flat_battery / max(1, len(self.ob.sat_ids)))
+            b.total = (b.sumrate + b.minrate + b.jain + b.migration + b.overload
+                       + b.queue + b.drop + b.battery)
             b.per_agent = self._rate_shaping(info)
         else:
             b.latency = -c.w_lat * (mean_lat / c.latency_scale)

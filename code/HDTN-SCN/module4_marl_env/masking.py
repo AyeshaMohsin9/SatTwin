@@ -4,7 +4,7 @@ import numpy as np
 from .action_space import STAY
 
 
-def feasible(sat_id, obs, gs_ids):
+def feasible(sat_id, obs, gs_ids, soft_capacity=True):
     mask = np.zeros(len(gs_ids) + 1, dtype=bool)
     mask[STAY] = True
     host = obs.host.get(sat_id)
@@ -12,9 +12,9 @@ def feasible(sat_id, obs, gs_ids):
     for i, g in enumerate(gs_ids):
         lat = cand.get(g, float("inf"))
         reachable = lat != float("inf")
-        not_full = not obs.overloaded(g)
         not_self = g != host
-        mask[i + 1] = bool(reachable and not_full and not_self)
+        ok = reachable and not_self and (soft_capacity or not obs.overloaded(g))
+        mask[i + 1] = bool(ok)
     return mask
 
 

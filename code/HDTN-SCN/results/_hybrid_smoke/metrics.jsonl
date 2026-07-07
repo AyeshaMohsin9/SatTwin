@@ -1,0 +1,8 @@
+{"iter": 0, "elapsed_s": 10.0, "sum_rate": 485.61, "min_rate": 0.274, "jain": 0.4443, "migrations": 1765.0, "entropy": 3.1782, "policy_loss": 0.72509, "value_loss": 687.7652, "kl": -0.30508}
+{"iter": 1, "elapsed_s": 19.9, "sum_rate": 474.98, "min_rate": 0.2697, "jain": 0.4484, "migrations": 1697.0, "entropy": 3.1559, "policy_loss": 0.71782, "value_loss": 661.6261, "kl": -0.30769}
+{"iter": 2, "elapsed_s": 30.1, "sum_rate": 477.82, "min_rate": 0.268, "jain": 0.4531, "migrations": 1677.0, "entropy": 3.1501, "policy_loss": 0.37927, "value_loss": 645.3788, "kl": -0.28448}
+{"iter": 3, "elapsed_s": 40.4, "sum_rate": 481.2, "min_rate": 0.2756, "jain": 0.4489, "migrations": 1645.0, "entropy": 3.1476, "policy_loss": 0.29592, "value_loss": 645.006, "kl": -0.29036}
+{"iter": 4, "elapsed_s": 50.3, "sum_rate": 477.92, "min_rate": 0.2736, "jain": 0.4484, "migrations": 1706.0, "entropy": 3.1602, "policy_loss": 0.41934, "value_loss": 620.3047, "kl": -0.30842}
+{"iter": 5, "elapsed_s": 61.0, "sum_rate": 479.86, "min_rate": 0.276, "jain": 0.4487, "migrations": 1623.0, "entropy": 3.123, "policy_loss": 0.44382, "value_loss": 610.122, "kl": -0.29236}
+{"iter": 6, "elapsed_s": 70.9, "sum_rate": 482.0, "min_rate": 0.2762, "jain": 0.4333, "migrations": 1638.0, "entropy": 3.1303, "policy_loss": 0.39159, "value_loss": 583.5354, "kl": -0.29265}
+{"iter": 7, "elapsed_s": 80.9, "sum_rate": 483.27, "min_rate": 0.2843, "jain": 0.4147, "migrations": 1621.0, "entropy": 3.107, "policy_loss": 0.85311, "value_loss": 557.6541, "kl": -0.30682}

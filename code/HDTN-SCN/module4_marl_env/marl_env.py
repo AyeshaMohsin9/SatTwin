@@ -81,7 +81,7 @@ class HDTNParallelEnv(ParallelEnv):
         for a in self.agents:
             mpc = self._mpc_feature(a)
             vec = self.ob.local_obs(a, obs, mpc_preview=mpc)
-            mask = feasible(a, obs, self.gs_ids).astype(np.int8)
+            mask = feasible(a, obs, self.gs_ids, self.core.cfg.soft_capacity).astype(np.int8)
             out[a] = {"observation": vec, "action_mask": mask}
         return out
 
@@ -92,7 +92,7 @@ class HDTNParallelEnv(ParallelEnv):
         self._prev_latency = dict(self._obs.latency)
         decoded = {}
         for a, act in actions.items():
-            mask = feasible(a, self._obs, self.gs_ids)
+            mask = feasible(a, self._obs, self.gs_ids, self.core.cfg.soft_capacity)
             act = int(act)
             if act != STAY and not mask[act]:
                 act = STAY

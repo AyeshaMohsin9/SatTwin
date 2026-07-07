@@ -30,6 +30,28 @@ class ScenarioConfig:
     gateway_bandwidth: float = 100.0
     sinr_ref_ms: float = 20.0
     noise_floor: float = 1.0
+    feedback_delay_slots: int = 0
+    demand_wave_ms: float = 0.0
+    demand_period_slots: int = 40
+    demand_surge_prob: float = 0.0
+    demand_surge_ms: float = 0.0
+    demand_surge_len: int = 5
+    queue_enabled: bool = False
+    gateway_service: float = 8.0
+    queue_latency_coef: float = 12.0
+    sat_arrival_mean: float = 1.0
+    sat_arrival_var: float = 0.5
+    buffer_capacity: float = 30.0
+    buffer_penalty: float = 5.0
+    battery_enabled: bool = False
+    battery_capacity: float = 100.0
+    tx_energy: float = 1.0
+    migrate_energy: float = 3.0
+    recharge_rate: float = 2.0
+    eclipse_frac: float = 0.35
+    low_battery_frac: float = 0.15
+    soft_capacity: bool = False
+    overload_cap_mult: float = 2.5
 
     @property
     def n_sats(self) -> int:

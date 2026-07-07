@@ -8,9 +8,17 @@ from .collector import Collector
 from .warm_start import behavior_clone
 from .mappo_policy import MAPPOPolicy
 from .build import build_mappo
+from .hybrid_actor import HybridActor
+from .hybrid_buffer import HybridRolloutBuffer
+from .hybrid_collector import HybridCollector
+from .hybrid_learner import HybridMAPPOLearner
+from .hybrid_policy import HybridPolicy
+from .hybrid_build import build_hybrid_mappo
 
 __all__ = [
     "ResidualActor", "CentralCritic", "RolloutBuffer", "LagrangianDual",
     "MAPPOLearner", "MAPPOConfig", "Collector", "behavior_clone",
     "MAPPOPolicy", "build_mappo",
+    "HybridActor", "HybridRolloutBuffer", "HybridCollector",
+    "HybridMAPPOLearner", "HybridPolicy", "build_hybrid_mappo",
 ]

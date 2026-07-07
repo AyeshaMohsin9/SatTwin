@@ -22,8 +22,9 @@ class MigrationExecutor:
     def execute(self, dt, target_gs):
         if target_gs is None or target_gs == dt.host_gs:
             return False
-        if self.env.ground.stations[target_gs].overloaded():
-            return False
+        if not getattr(self.env.cfg, "soft_capacity", False):
+            if self.env.ground.stations[target_gs].overloaded():
+                return False
         dt.being_migrated = True
         old = dt.host_gs
         applied = self.env.apply_action(dt.entity_id, target_gs)

@@ -14,6 +14,8 @@ class Observation:
     gs_capacity: dict = field(default_factory=dict)
     predicted_latency: dict = field(default_factory=dict)
     edge_station_ids: list = field(default_factory=list)
+    queue: dict = field(default_factory=dict)
+    battery: dict = field(default_factory=dict)
 
     def candidates(self, dt_id):
         return list(self.cand_latency[dt_id].keys())

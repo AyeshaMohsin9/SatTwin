@@ -1,5 +1,12 @@
-# Module 4 — discrete migration action space {stay} ∪ 𝒢 with index<->GS mapping.
+# Module 4 — hybrid action: discrete gateway {stay} ∪ 𝒢 + continuous bandwidth weight.
 STAY = 0
+BW_MIN = 0.2
+BW_MAX = 5.0
+
+
+def decode_bw(raw):
+    r = max(0.0, min(1.0, float(raw)))
+    return BW_MIN + r * (BW_MAX - BW_MIN)
 
 
 def n_actions(n_gs):

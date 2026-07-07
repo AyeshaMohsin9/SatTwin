@@ -3,15 +3,16 @@ from ..migration import MigrationPolicy
 
 
 class HysteresisPolicy(MigrationPolicy):
-    def __init__(self, margin_ms=20.0):
+    def __init__(self, margin_ms=20.0, soft_capacity=True):
         self.margin = margin_ms
+        self.soft_capacity = soft_capacity
 
     def decide(self, dt, obs, t):
         sid = dt.entity_id
         cur = obs.latency.get(sid, float("inf"))
         best_gs, best_lat = None, cur
         for gs in obs.candidates(sid):
-            if obs.overloaded(gs):
+            if not self.soft_capacity and obs.overloaded(gs):
                 continue
             lat = obs.candidate_latency(sid, gs)
             if lat < best_lat:

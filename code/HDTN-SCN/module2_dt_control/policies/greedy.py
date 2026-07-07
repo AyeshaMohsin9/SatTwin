@@ -1,10 +1,11 @@
-# Module 2 — default migration policy: threshold-triggered nearest non-overloaded GS.
+# Module 2 — default migration policy: threshold-triggered lowest-effective-latency GS.
 from ..migration import MigrationPolicy
 
 
 class GreedyNearestPolicy(MigrationPolicy):
-    def __init__(self, threshold_ms):
+    def __init__(self, threshold_ms, soft_capacity=True):
         self.threshold = threshold_ms
+        self.soft_capacity = soft_capacity
 
     def decide(self, dt, obs, t):
         cur = obs.latency[dt.entity_id]
@@ -12,7 +13,7 @@ class GreedyNearestPolicy(MigrationPolicy):
             return None
         best_gs, best_lat = None, cur
         for gs in obs.candidates(dt.entity_id):
-            if obs.overloaded(gs):
+            if not self.soft_capacity and obs.overloaded(gs):
                 continue
             lat = obs.candidate_latency(dt.entity_id, gs)
             if lat < best_lat:

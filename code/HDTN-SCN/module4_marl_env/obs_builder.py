@@ -27,7 +27,7 @@ class ObsBuilder:
         self.last_migration_t = {s: 0.0 for s in self.sat_ids}
 
     def local_dim(self):
-        return 4 + 3 * self.n_gs
+        return 6 + 3 * self.n_gs
 
     def global_dim(self):
         return len(self.sat_ids) * (1 + self.n_gs) + 2 * self.n_gs
@@ -44,7 +44,11 @@ class ObsBuilder:
         pred = _norm_lat(obs.predicted_latency.get(sat_id, float("inf")))
         aoi = (obs.t - self.last_migration_t.get(sat_id, 0.0)) / AOI_SCALE
         host_idx = self._gs_index.get(host, -1)
-        scalar = [cur, pred, aoi, host_idx / max(1, self.n_gs - 1)]
+        qcap = max(1.0, getattr(self.env.cfg, "buffer_capacity", 30.0))
+        bcap = max(1.0, getattr(self.env.cfg, "battery_capacity", 100.0))
+        q = min(1.5, obs.queue.get(sat_id, 0.0) / qcap) if obs.queue else 0.0
+        bat = (obs.battery.get(sat_id, bcap) / bcap) if obs.battery else 1.0
+        scalar = [cur, pred, aoi, host_idx / max(1, self.n_gs - 1), q, bat]
         cand = obs.cand_latency.get(sat_id, {})
         cand_vec, load_vec, rank_vec = [], [], []
         lat_pairs = []
