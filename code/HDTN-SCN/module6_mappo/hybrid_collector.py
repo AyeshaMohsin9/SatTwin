@@ -70,10 +70,14 @@ class HybridCollector:
         rates = info.get("rates", [])
         qcap = max(1e-6, rc.queue_scale)
         obs = self.env._obs
+        step_drop = getattr(self.env.core, "_step_drop", {})
         out = np.zeros(self.n_agents, dtype=np.float32)
         for i, (a, r) in enumerate(zip(self.agents, rates)):
             q = obs.queue.get(a, 0.0) if getattr(obs, "queue", None) else 0.0
-            out[i] = rc.w_sumrate * (float(r) / rc.rate_scale) - rc.w_queue * (q / qcap)
+            dr = step_drop.get(a, 0.0)
+            out[i] = (rc.w_sumrate * (float(r) / rc.rate_scale)
+                      - rc.w_queue * (q / qcap)
+                      - rc.w_drop * (dr / qcap))
         return out
 
     def collect(self, n_steps):

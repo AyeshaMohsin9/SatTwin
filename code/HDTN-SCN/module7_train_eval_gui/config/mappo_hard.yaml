@@ -19,14 +19,14 @@ warm_start_epochs: 5
 
 reward:
   objective: rate
-  w_sumrate: 1.0
+  w_sumrate: 0.5
   w_minrate: 1.0
-  w_jain: 3.0
-  w_mig: 0.5
-  w_queue: 1.5
-  w_drop: 2.5
+  w_jain: 2.0
+  w_mig: 0.3
+  w_queue: 5.0
+  w_drop: 10.0
   w_battery: 4.0
-  w_shaping: 0.4
+  w_shaping: 0.6
   beta: 0.0
   rate_scale: 400.0
   queue_scale: 25.0
@@ -37,7 +37,7 @@ mappo:
   lr_critic: 0.0008
   clip: 0.2
   value_clip: 0.2
-  entropy_coef: 0.004
+  entropy_coef: 0.006
   value_coef: 0.5
   max_grad_norm: 0.5
   epochs: 4
@@ -46,9 +46,9 @@ mappo:
   gamma: 0.99
   lam: 0.95
   normalize_adv: true
-  entropy_coef_final: 0.001
-  entropy_anneal_iters: 1500
-  local_credit: 0.3
+  entropy_coef_final: 0.0002
+  entropy_anneal_iters: 1000
+  local_credit: 0.5
 
 lagrangian:
   init_beta: 0.1

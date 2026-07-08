@@ -24,6 +24,7 @@ class HDTNEnvironment:
         self.queue = {}
         self.battery = {}
         self._dropped = {}
+        self._step_drop = {}
         self._age = {}
         self._sat_phase = {}
 
@@ -87,6 +88,7 @@ class HDTNEnvironment:
                 gw_count[h] = gw_count.get(h, 0) + 1
         info = {"queue": 0.0, "dropped": 0.0, "flat_battery": 0, "overflow": 0,
                 "aoi": 0.0, "expired": 0}
+        self._step_drop = {s: 0.0 for s in self.constellation.sat_ids}
         for sid, lat in zip(self.constellation.sat_ids, latencies):
             h = self.edge_dt_host.get(sid)
             bat = self.battery.get(sid, cfg.battery_capacity)
@@ -107,13 +109,16 @@ class HDTNEnvironment:
                 if cfg.data_deadline_slots > 0 and self._age[sid] > cfg.data_deadline_slots:
                     expired = self.queue[sid]
                     self._dropped[sid] += expired
+                    self._step_drop[sid] += expired
                     info["dropped"] += expired
                     info["expired"] += 1
                     self.queue[sid] = 0.0
                     self._age[sid] = 0.0
                 if self.queue[sid] > cfg.buffer_capacity:
-                    self._dropped[sid] += self.queue[sid] - cfg.buffer_capacity
-                    info["dropped"] += self.queue[sid] - cfg.buffer_capacity
+                    over = self.queue[sid] - cfg.buffer_capacity
+                    self._dropped[sid] += over
+                    self._step_drop[sid] += over
+                    info["dropped"] += over
                     self.queue[sid] = cfg.buffer_capacity
                     info["overflow"] += 1
                 info["queue"] += self.queue[sid]

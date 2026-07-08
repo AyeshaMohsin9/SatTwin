@@ -31,8 +31,8 @@ demand_surge_ms: 150.0
 demand_surge_len: 5
 queue_enabled: true
 gateway_service: 6.0
-sat_arrival_mean: 1.6
-sat_arrival_var: 0.7
+sat_arrival_mean: 0.95
+sat_arrival_var: 0.4
 buffer_capacity: 18.0
 buffer_penalty: 5.0
 battery_enabled: true

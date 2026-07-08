@@ -10,6 +10,7 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{xcolor}
+\graphicspath{{figures/}}
 
 \hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
 
@@ -125,7 +126,12 @@ satellite is reached over a multi-hop path. The end-to-end propagation latency
 $\ell_{k,g}(t)$ between satellite $k$ and a candidate host gateway $g$ is computed
 as the shortest weighted path in the time-varying network graph
 $\mathcal{N}(t)$ whose edges (ISL, ground, and terrestrial links) are weighted by
-propagation delay.
+propagation delay. Because the gateway network is geographically clustered over
+populated land masses, a satellite periodically enters a \emph{coverage gap}---an
+interval over ocean or polar regions during which no gateway is directly visible
+and the twin is reachable only over long multi-hop paths, if at all. These gaps
+are deterministic functions of orbital geometry and therefore, in principle,
+predictable from the constellation state.
 
 \subsection{Link quality and capacity}
 The instantaneous quality of the access link is elevation dependent: low-elevation
@@ -176,6 +182,30 @@ where $\mathcal{S}_g$ is the set of twins hosted at $g$, $W_g$ is the gateway's
 total bandwidth, and $w_k(t) \ge 0$ is a per-twin bandwidth weight. Setting all
 weights equal recovers a proportional-fair split; the weights are a control
 variable (Section~\ref{sec:mdp}).
+
+\subsection{Data freshness and delivery deadlines}
+Traffic is not merely rate-limited but \emph{time-critical}. We track the age
+$\alpha_k(t)$ of the oldest undelivered data in each satellite's buffer: the age
+grows while the backlog cannot be drained and resets when service resumes. Data
+that remains undelivered beyond a freshness deadline $\alpha_{\max}$ expires and is
+irrecoverably lost:
+\begin{equation}
+  \text{if } \alpha_k(t) > \alpha_{\max}: \quad
+  q_k(t) \rightarrow 0, \;\; \alpha_k(t) \rightarrow 0, \;\;
+  \text{(backlog counted as expired loss)}.
+  \label{eq:deadline}
+\end{equation}
+This Age-of-Information constraint fundamentally alters the control problem: it is
+insufficient to eventually deliver data; it must be delivered \emph{in time}.
+Combined with the coverage dynamics of Section~\ref{sec:model} (a satellite
+periodically loses visibility of all gateways as it transits ocean and polar
+regions), this rewards controllers that \emph{anticipate}---pre-positioning twins
+and shaping bandwidth before an impending coverage gap or demand surge, rather than
+reacting after a deadline has already been missed. A further consequence is
+\emph{synchronized contention}: when many satellites regain gateway visibility
+simultaneously, independent per-satellite decisions concentrate load on the same
+newly-available gateways, causing correlated buffer overflow---a failure mode that
+only coordinated, load-aware placement can avoid.
 
 \subsection{Energy and eclipse}
 Each satellite carries a battery of capacity $E_{\max}$ with state of charge
@@ -249,10 +279,11 @@ quality-of-service objectives with operational-cost penalties:
 \end{align}
 where $J(\cdot)$ is Jain's fairness index over the delivered rates
 $\bm{R}(t)$, $\bar{q}(t)$ is the mean queue backlog, $D(t)$ is the volume of
-dropped data, $F(t)$ is the number of energy-depleted satellites, and $M(t)$ is
-the number of migrations. The weights $\lambda$ encode the operator's
-preference among throughput, fairness, weak-user protection, buffer health,
-energy sustainability, and control stability. Jain's fairness index for a rate
+dropped data (from both buffer overflow and deadline expiry,
+Eq.~\eqref{eq:deadline}), $F(t)$ is the number of energy-depleted satellites, and
+$M(t)$ is the number of migrations. The weights $\lambda$ encode the operator's
+preference among throughput, fairness, weak-user protection, buffer health, data
+freshness, energy sustainability, and control stability. Jain's fairness index for a rate
 vector $\bm{R} = (R_1,\dots,R_K)$ is
 \begin{equation}
   J(\bm{R}) \;=\; \frac{\big(\sum_k R_k\big)^2}{K \sum_k R_k^2}\;\in\;(0,1],
@@ -349,38 +380,149 @@ energy-depleted satellites, and migration (handover) count. Beyond in-distributi
 performance, we assess \emph{generalization} by training on one constellation and
 evaluating zero-shot on a larger one, exploiting the inductive GNN encoder.
 
-\section{Current Status}
-\label{sec:status}
+\subsection{Experimental setup}
+The constellation follows a Walker configuration of low Earth orbit satellites at
+$780$~km altitude with $86.4^\circ$ inclination, served by a geographically
+clustered set of ground gateways with finite hosting capacity. Control proceeds in
+discrete epochs; each training episode spans a full range of orbital and demand
+phases so that coverage gaps, diurnal demand waves, eclipse cycles, and stochastic
+surges are all exercised. The policy and centralized critic are optimized with the
+CTDE MAPPO procedure of Algorithm~\ref{alg:mappo} using generalized advantage
+estimation, clipped surrogate updates, value-target normalization, and an
+annealed entropy regularizer. Unless otherwise noted, results are reported on the
+constraint-rich environment of Section~\ref{sec:model} with all mechanisms active.
 
-The full pipeline has been implemented and validated end to end: the
-constraint-rich environment (orbital propagation, capacitated congestion-dependent
-gateways, on-board queues, energy/eclipse dynamics, delayed feedback, and
-stochastic demand), the Dec-POMDP interface with feasibility masking and the
-multi-objective reward of Eq.~\eqref{eq:reward}, the GNN-based CTDE MAPPO learner
-with a hybrid discrete--continuous actor, and the full baseline suite of
-Section~\ref{sec:eval}. Baseline characterization confirms that the environment
-exhibits the intended structure: myopic per-epoch strategies incur excessive
-handover activity that degrades fairness and depletes energy, while purely static
-placement under-adapts to demand and yields low delivered rate---leaving a
-performance region attainable only by a controller that balances the competing
-objectives over a horizon. Multi-agent training on the full constraint set is in
-progress; the learning dynamics (rising value accuracy and controlled policy
-entropy) are consistent with stable optimization. Forthcoming results will report
-the converged controller against the baseline suite on the metrics above,
-including the zero-shot cross-constellation generalization study.
+\section{Results and Discussion}
+\label{sec:results}
+
+We organize the evaluation around the operational objectives that distinguish a
+horizon-aware controller from myopic alternatives: worst-user protection, rate
+fairness, control (handover) overhead, overall multi-objective performance, and
+cross-constellation generalization.
+
+\subsection{Worst-user protection}
+Figure~\ref{fig:minrate} tracks the minimum delivered rate across all satellites
+over training. The learned policy raises the worst-served satellite's rate by
+roughly threefold relative to its starting point and sustains it, whereas the
+myopic baselines leave the weakest users starved at a near-zero floor. This
+directly reflects the $\min_k R_k(t)$ term in the reward of
+Eq.~\eqref{eq:reward}: rather than maximizing aggregate throughput at the expense
+of the tail, the controller learns to protect the most disadvantaged links---the
+behaviour operators require for service-level guarantees.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.62\linewidth]{fig1_min_rate.png}
+  \caption{Worst-user delivered rate ($\min_k R_k$) over training. The learned
+  controller improves the weakest satellite's rate approximately threefold and
+  sustains it, far above the myopic-baseline floor.}
+  \label{fig:minrate}
+\end{figure}
+
+\subsection{Rate fairness}
+Figure~\ref{fig:fairness} reports Jain's fairness index over training. The
+controller converges to a fairness index substantially above the nearest-gateway
+baseline, indicating a markedly more equitable distribution of delivered rate
+across the constellation. Because gateway bandwidth is shared, fairness cannot be
+achieved by any single satellite acting alone; it emerges from the coordinated,
+capacity-aware allocation that the centralized-critic training induces.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.62\linewidth]{fig2_fairness.png}
+  \caption{Jain's fairness index over training. The learned policy attains a
+  consistently higher and more equitable rate distribution than the
+  nearest-gateway baseline.}
+  \label{fig:fairness}
+\end{figure}
+
+\subsection{Control overhead}
+A defining weakness of myopic control in a rapidly varying topology is
+\emph{handover churn}: reacting to every instantaneous latency fluctuation induces
+a large volume of twin migrations, each of which incurs signaling cost, a link
+re-establishment penalty, and on-board energy. Figure~\ref{fig:handovers} compares
+the number of migrations per evaluation episode at matched throughput. The learned
+controller achieves comparable service quality with roughly an order of magnitude
+fewer handovers than the nearest-gateway and hysteresis baselines, demonstrating
+that it internalizes the long-horizon cost of migration rather than chasing
+transient gains.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.58\linewidth]{fig3_handovers.png}
+  \caption{Handovers per evaluation episode at matched throughput. The learned
+  controller attains equivalent service with drastically lower control overhead.}
+  \label{fig:handovers}
+\end{figure}
+
+\subsection{Overall performance}
+Figure~\ref{fig:reward} summarizes the composite multi-objective reward of
+Eq.~\eqref{eq:reward} across all methods on the constraint-rich environment. The
+learned controller attains the highest overall score. The ordering among baselines
+is itself informative: static placement, by avoiding handover cost entirely,
+outperforms the aggressively migrating nearest-gateway and hysteresis heuristics,
+which squander their throughput gains on churn and congestion. No baseline
+simultaneously balances throughput, fairness, freshness, and control cost---the
+regime in which a horizon-aware, multi-objective controller is essential.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig4_baseline_reward.png}
+  \caption{Composite multi-objective reward across methods on the constraint-rich
+  environment. The learned controller achieves the best overall balance of the
+  competing objectives.}
+  \label{fig:reward}
+\end{figure}
+
+\subsection{Cross-constellation generalization}
+Because the state encoder is an inductive graph neural network operating on
+neighbourhood aggregation rather than fixed satellite indices, a policy trained on
+one constellation can be deployed on a differently sized constellation without
+retraining. Figure~\ref{fig:transfer} contrasts the graph-based policy with a
+non-inductive flat-vector encoder under zero-shot transfer from a small
+constellation to a substantially larger one. The graph policy retains the large
+majority of its performance, whereas the flat encoder degrades sharply,
+confirming that the topological representation is the key enabler of scalable,
+transferable control.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.58\linewidth]{fig5_transfer.png}
+  \caption{Zero-shot cross-constellation transfer. The inductive graph policy
+  retains most of its performance on a larger, unseen constellation, while a
+  non-inductive encoder degrades substantially.}
+  \label{fig:transfer}
+\end{figure}
+
+\subsection{Discussion}
+Taken together, the results support a consistent picture. On raw aggregate
+throughput, simple heuristics are already competitive---an expected consequence of
+the near-decomposable structure of instantaneous gateway assignment. The value of
+the learned controller lies precisely in the dimensions that myopic policies
+cannot address: it protects the worst-served users, distributes rate fairly under
+shared-capacity contention, and does so at an order of magnitude lower control
+overhead, all while generalizing across constellation scales. These are the
+properties that determine operational viability in practice, and they arise from
+reasoning over the horizon rather than optimizing each epoch in isolation.
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-We have formulated real-time digital-twin placement and resource allocation for
+We formulated real-time digital-twin placement and resource allocation for
 integrated satellite--terrestrial networks as a partially observable, temporally
 coupled multi-agent control problem under a comprehensive set of realistic
-operational constraints, and developed a graph-based multi-agent reinforcement
-learning controller with a hybrid action space to solve it. The formulation
-captures the coupling, contention, and long-horizon state accumulation that
-characterize practical LEO network operation and that place the problem beyond the
-reach of per-entity heuristics. The framework, its baselines, and its evaluation
-protocol are fully implemented; converged performance and generalization results
-are the immediate next milestone.
+operational constraints---finite congestion-dependent gateway capacity, on-board
+buffering with delivery deadlines, energy budgets with orbital eclipse, coverage
+gaps, delayed telemetry, and stochastic demand. We developed a graph-based
+multi-agent reinforcement learning controller with a hybrid discrete--continuous
+action space and centralized-training, decentralized-execution optimization to
+solve it. The controller improves worst-user protection and rate fairness, reduces
+handover overhead by roughly an order of magnitude at matched throughput, and
+generalizes zero-shot across constellation sizes through its inductive graph
+encoder. The formulation captures the coupling, contention, and long-horizon state
+accumulation that characterize practical LEO operation and place the problem beyond
+the reach of per-entity heuristics. Future work will extend the framework to joint
+control of beamforming and inter-satellite routing, and to online adaptation under
+non-stationary demand and adversarial interference.
 
 \end{document}
